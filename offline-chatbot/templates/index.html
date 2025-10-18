@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistant | Offline Chatbot</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #5E17EB;
+      --primary-light: #7C43F3;
+      --secondary-color: #00D9C0;
+      --text-dark: #2A2A3C;
+      --text-light: #6E6E80;
+      --bg-light: #F8F9FB;
+      --bg-dark: #2A2A3C;
+      --white: #FFFFFF;
+      --shadow: 0 10px 30px rgba(94, 23, 235, 0.1);
+      --transition: all 0.3s ease;
+      --user-msg-bg: #5E17EB;
+      --bot-msg-bg: #F0F2F5;
+      --error-color: #FF4D4D;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #FFFFFF;
+      color: var(--text-dark);
+    }
+
+    .container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-container {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: var(--primary-color);
+      color: var(--white);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo i {
+      font-size: 1.8rem;
+    }
+
+    .model-selector {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .model-selector h3 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .model-selector select {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text-dark);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .model-selector select:focus {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+    }
+
+    .refresh-models {
+      margin-top: 0.75rem;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: var(--white);
+      padding: 0.6rem;
+      width: 100%;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .refresh-models:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .file-upload {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: auto;
+    }
+
+    .file-upload h3 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .upload-btn-wrapper {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .upload-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--white);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      width: 100%;
+      border: none;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    .upload-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .upload-btn-wrapper input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-info {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+
+    /* ChatGPT style chat area */
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .chat-title {
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .chat-controls button {
+      background: none;
+      border: none;
+      color: var(--text-light);
+      font-size: 1.2rem;
+      cursor: pointer;
+      margin-left: 1rem;
+      transition: var(--transition);
+    }
+
+    .chat-controls button:hover {
+      color: var(--primary-color);
+    }
+
+    /* New chat messages layout - ChatGPT style */
+    .messages-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column; 
+      position: relative;
+      scroll-behavior: smooth;
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 1rem 2rem;
+      margin-top: auto; /* Push content to bottom */
+      width: 100%;
+    }
+
+    .chat-row {
+      padding: 0.75rem 0;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .chat-row-label {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-bottom: 0.3rem;
+      padding-left: 0.5rem;
+    }
+
+    .chat-bubble {
+      display: inline-block;
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .user-row {
+      align-items: flex-end;
+    }
+
+    .user-row .chat-bubble {
+      background: var(--primary-color);
+      color: white;
+      text-align: left;
+      margin-left: auto;
+    }
+
+    .bot-row .chat-bubble {
+      background: var(--bot-msg-bg);
+      color: var(--text-dark);
+      margin-right: auto;
+    }
+
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: var(--bot-msg-bg);
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      margin-right: auto;
+    }
+    
+    .typing-indicator-container {
+      display: none;
+    }
+    
+    .typing-indicator-container.visible {
+      display: block;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--text-light);
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: typing 1s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .chat-footer {
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 1rem 1.5rem;
+      background: #fff;
+      flex-shrink: 0;
+      width: 100%;
+      z-index: 10;
+    }
+
+    .input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      padding-right: 100px;
+      background: white;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      border: none;
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      resize: none;
+      max-height: 150px;
+      min-height: 24px;
+      height: 24px;
+      background: transparent;
+    }
+
+    .input-actions {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.4rem;
+      border-radius: 50%;
+      transition: var(--transition);
+      color: var(--primary-color);
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .send-btn {
+      background: var(--primary-color);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .send-btn:hover {
+      background: var(--primary-light);
+    }
+
+    .send-btn i {
+      font-size: 1rem;
+    }
+
+    .stop-btn {
+      background: #ff4d4d;
+      display: none;
+    }
+
+    .stop-btn:hover {
+      background: #ff6666;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 0.75rem;
+      color: var(--text-light);
+      font-size: 0.8rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Status indicator for Ollama */
+    .status-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    
+    .status-online {
+      background-color: #4CAF50;
+    }
+    
+    .status-offline {
+      background-color: #FF5252;
+    }
+    
+    .model-status {
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .chat-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="chat-container">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <i class="fas fa-robot"></i>
+            <span>OfflineAI</span>
+          </div>
+        </div>
+
+        <!-- Model Selector -->
+        <div class="model-selector">
+          <h3><i class="fas fa-brain"></i> Choose Model</h3>
+          <select id="modelSelect">
+            <option value="loading">Loading models...</option>
+          </select>
+          <div id="ollamaStatus" class="model-status">
+            <span class="status-indicator status-offline"></span>
+            <span>Checking Ollama status...</span>
+          </div>
+          <button class="refresh-models" onclick="refreshModels()">
+            <i class="fas fa-sync-alt"></i> Refresh Models
+          </button>
+        </div>
+
+        <!-- File Upload -->
+        <div class="file-upload">
+          <h3><i class="fas fa-file-alt"></i> Upload Document</h3>
+          <div class="upload-btn-wrapper">
+            <button class="upload-btn">
+              <i class="fas fa-cloud-upload-alt"></i> Select File
+            </button>
+            <input type="file" id="fileInput" onchange="uploadFile()">
+          </div>
+          <div class="file-info">Supports PDF and TXT files</div>
+        </div>
+      </div>
+
+      <!-- Chat Area -->
+      <div class="chat-area">
+        <div class="chat-header">
+          <div class="chat-title">New Conversation</div>
+          <div class="chat-controls">
+            <button onclick="clearChat()" title="Clear conversation"><i class="fas fa-trash"></i></button>
+            <button title="Settings"><i class="fas fa-cog"></i></button>
+          </div>
+        </div>
+
+        <div class="messages-wrapper" id="messages-wrapper">
+          <div class="messages" id="messages">
+            <!-- Bot welcome message -->
+            <div class="chat-row bot-row">
+              <div class="chat-row-label">AI</div>
+              <div class="chat-bubble">
+                Hello! I'm your AI assistant. How can I help you today?
+              </div>
+            </div>
+            
+            <!-- Typing indicator -->
+            <div id="typingIndicator" class="chat-row bot-row typing-indicator-container">
+              <div class="chat-row-label">AI</div>
+              <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-footer">
+          <div class="input-container">
+            <input type="text" id="input" class="input-field" placeholder="Type your message here..." autocomplete="off">
+            <div class="input-actions">
+              <button class="action-btn" onclick="startVoiceInput()" title="Voice input">
+                <i class="fas fa-microphone"></i>
+              </button>
+              <button class="send-btn" id="sendButton" onclick="sendMessage()" title="Send message">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+              <button class="send-btn stop-btn" id="stopButton" onclick="stopGeneration()" title="Stop generating">
+                <i class="fas fa-stop"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script includes -->
+  <script src="static/script.js"></script>
+  
+  <!-- Initialize frontend -->
+  <script>
+    // Make sure script.js is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize variables
+      const sendButton = document.getElementById('sendButton');
+      const stopButton = document.getElementById('stopButton');
+      const typingIndicator = document.getElementById('typingIndicator');
+      const input = document.getElementById('input');
+      const ollamaStatus = document.getElementById('ollamaStatus');
+      const messagesWrapper = document.getElementById('messages-wrapper');
+      const messages = document.getElementById('messages');
+      
+      // Scroll to bottom initially
+      scrollToBottom();
+      
+      // Check if functions exist from script.js
+      if (typeof refreshModels === 'function') {
+        // Check Ollama status
+        fetch('/check_ollama')
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'ok') {
+              ollamaStatus.innerHTML = `
+                <span class="status-indicator status-online"></span>
+                <span>Ollama is running</span>
+              `;
+              refreshModels();
+            } else {
+              ollamaStatus.innerHTML = `
+                <span class="status-indicator status-offline"></span>
+                <span>Ollama is not running</span>
+              `;
+              
+              const select = document.getElementById('modelSelect');
+              select.innerHTML = '<option value="ollama_not_available">⚠️ Ollama Not Available</option>';
+              
+              addMessage('bot', `⚠️ ${data.message}\n\n${data.installation}\n\nPlease install Ollama from https://ollama.ai and restart this app.`);
+            }
+          })
+          .catch(err => {
+            console.error('Error checking Ollama:', err);
+            ollamaStatus.innerHTML = `
+              <span class="status-indicator status-offline"></span>
+              <span>Connection error</span>
+            `;
+            addMessage('bot', '⚠️ Error checking Ollama status. Please make sure the Flask server is running.');
+          });
+      } else {
+        console.error('script.js not loaded properly');
+        addMessage('bot', '⚠️ Error loading JavaScript. Please refresh the page.');
+      }
+      
+      // Initialize button displays
+      if (stopButton) {
+        stopButton.style.display = 'none';
+      }
+      
+      // Initialize input field handlers
+      if (input) {
+        // Auto-resize input field
+        input.addEventListener('input', function() {
+          this.style.height = '24px';
+          this.style.height = (this.scrollHeight) + 'px';
+        });
+        
+        // Handle Enter key
+        input.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+      }
+      
+      // Focus input field when page loads
+      if (input) {
+        input.focus();
+      }
+      
+      // Add resize observer to handle zoom
+      const resizeObserver = new ResizeObserver(() => {
+        scrollToBottom();
+      });
+      
+      if (messagesWrapper) {
+        resizeObserver.observe(messagesWrapper);
+      }
+    });
+    
+    // Add a message to the chat UI
+    function addMessage(sender, text) {
+      const messages = document.getElementById('messages');
+      const messageRow = document.createElement('div');
+      messageRow.className = `chat-row ${sender}-row`;
+      
+      const rowLabel = document.createElement('div');
+      rowLabel.className = 'chat-row-label';
+      rowLabel.textContent = sender === 'user' ? 'You' : 'AI';
+      
+      const chatBubble = document.createElement('div');
+      chatBubble.className = 'chat-bubble';
+      chatBubble.textContent = text;
+      
+      messageRow.appendChild(rowLabel);
+      messageRow.appendChild(chatBubble);
+      
+      const typingIndicator = document.getElementById('typingIndicator');
+      // Insert before typing indicator if it exists
+      if (typingIndicator && typingIndicator.parentNode === messages) {
+        messages.insertBefore(messageRow, typingIndicator);
+      } else {
+        messages.appendChild(messageRow);
+      }
+      
+      // Scroll to bottom after a brief delay to ensure DOM is updated
+      setTimeout(scrollToBottom, 10);
+    }
+    
+    // More reliable way to scroll to bottom
+    function scrollToBottom() {
+      const messagesWrapper = document.getElementById('messages-wrapper');
+      if (messagesWrapper) {
+        messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
+      }
+    }
+    
+    // Function to clear chat
+    function clearChat() {
+      const messages = document.getElementById('messages');
+      
+      // Check if element exists 
+      if (!messages) return;
+      
+      // Clear messages but leave typing indicator
+      messages.innerHTML = `
+        <div class="chat-row bot-row">
+          <div class="chat-row-label">AI</div>
+          <div class="chat-bubble">
+            Hello! I'm your AI assistant. How can I help you today?
+          </div>
+        </div>
+        
+        <div id="typingIndicator" class="chat-row bot-row typing-indicator-container">
+          <div class="chat-row-label">AI</div>
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      
+      // Scroll to bottom
+      scrollToBottom();
+    }
+    
+    // Override standard functions in script.js
+    if (typeof window.addMessage === 'function') {
+      const originalAddMessage = window.addMessage;
+      window.addMessage = function(sender, text) {
+        originalAddMessage(sender, text);
+        setTimeout(scrollToBottom, 10);
+      };
+    }
+  </script>
+</body>
+</html>
